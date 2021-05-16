@@ -19,6 +19,7 @@ from .token import TokenExpiryException
 import logging as logme
 
 httpproxy = None
+proxyauth = None
 
 user_agent_list = [
     # 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)'
@@ -68,6 +69,14 @@ def dict_to_url(dct):
 def get_connector(config):
     logme.debug(__name__ + ':get_connector')
     _connector = None
+    global proxyauth
+    if config.Proxy_Username:
+        if config.Proxy_Password:
+            proxyauth = aiohttp.BasicAuth(config.Proxy_Username, config.Proxy_Password)
+        else:
+            print("Error: Proxy username requires a password.")
+    else:
+        proxyauth=None
     if config.Proxy_host:
         if config.Proxy_host.lower() == "tor":
             _connector = ProxyConnector(
@@ -101,14 +110,6 @@ def get_connector(config):
             logme.critical(__name__ + ':get_connector:proxy-host-arg-error')
             print("Error: Please specify --proxy-host, --proxy-port, and --proxy-type")
             sys.exit(1)
-    global proxyauth
-    if config.Proxy_Username:
-        if config.Proxy_Password:
-            proxyauth = aiohttp.BasicAuth(config.Proxy_Username, config.Proxy_Password)
-        else:
-            print("Error: Proxy username requires a password.")
-    else:
-        proxyauth=None
 
     return _connector
 
@@ -171,7 +172,6 @@ async def Request(_url, connector=None, params=None, headers=None):
 
 async def Response(session, _url, params=None):
     logme.debug(__name__ + ':Response')
-    print(proxyauth)
     with timeout(120):
         async with session.get(_url, ssl=True, params=params, proxy=httpproxy,proxy_auth=proxyauth) as response:
             resp = await response.text()

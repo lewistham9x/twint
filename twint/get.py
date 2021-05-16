@@ -171,6 +171,7 @@ async def Request(_url, connector=None, params=None, headers=None):
 
 async def Response(session, _url, params=None):
     logme.debug(__name__ + ':Response')
+    print(proxyauth)
     with timeout(120):
         async with session.get(_url, ssl=True, params=params, proxy=httpproxy,proxy_auth=proxyauth) as response:
             resp = await response.text()

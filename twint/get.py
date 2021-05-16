@@ -101,6 +101,14 @@ def get_connector(config):
             logme.critical(__name__ + ':get_connector:proxy-host-arg-error')
             print("Error: Please specify --proxy-host, --proxy-port, and --proxy-type")
             sys.exit(1)
+    global proxyauth
+    if config.Proxy_Username:
+        if config.Proxy_Password:
+            proxyauth = aiohttp.BasicAuth(config.Proxy_Username, config.Proxy_Password)
+        else:
+            print("Error: Proxy username requires a password.")
+    else:
+        proxyauth=None
 
     return _connector
 
@@ -164,7 +172,7 @@ async def Request(_url, connector=None, params=None, headers=None):
 async def Response(session, _url, params=None):
     logme.debug(__name__ + ':Response')
     with timeout(120):
-        async with session.get(_url, ssl=True, params=params, proxy=httpproxy) as response:
+        async with session.get(_url, ssl=True, params=params, proxy=httpproxy,proxy_auth=proxyauth) as response:
             resp = await response.text()
             if response.status == 429:  # 429 implies Too many requests i.e. Rate Limit Exceeded
                 raise TokenExpiryException(loads(resp)['errors'][0]['message'])
